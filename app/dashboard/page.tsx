@@ -1,62 +1,55 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
-import createBrowserClient from '../../lib/supabaseClient';
+import { createBrowserClient } from '../../lib/supabaseClient';
 
-export default function DashboardPage() {
+export default function Dashboard() {
   const supabase = createBrowserClient();
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
+    // 🔍 Check who’s logged in
+    async function loadUser() {
+      const { data, error } = await supabase.auth.getUser();
       if (data?.user) {
         setUser(data.user);
       } else {
+        // if no one is logged in, send back to login
         window.location.href = '/login';
       }
-      setLoading(false);
-    };
-    getUser();
-  }, []);
+    }
+    loadUser();
+  }, [supabase]);
 
-  if (loading) return <p>Loading...</p>;
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
 
   return (
-    <main
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        marginTop: 80,
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      <h1 style={{ fontSize: 64, marginBottom: 20 }}>Welcome to your Dashboard</h1>
-
-      {user && (
+    <main style={{ textAlign: 'center', marginTop: 100 }}>
+      <h1>Dashboard</h1>
+      {user ? (
         <>
-          <p style={{ fontSize: 20 }}>Logged in as: {user.email}</p>
+          <p>🎉 You’re logged in as:</p>
+          <p style={{ fontWeight: 'bold', marginTop: 8 }}>{user.email}</p>
           <button
+            onClick={handleLogout}
             style={{
               marginTop: 20,
-              padding: '12px 18px',
+              padding: '8px 16px',
               borderRadius: 6,
-              background: '#ff6961',
               border: 'none',
+              backgroundColor: '#333',
               color: 'white',
               cursor: 'pointer',
             }}
-            onClick={async () => {
-              await supabase.auth.signOut();
-              window.location.href = '/login';
-            }}
           >
-            Log Out
+            Log out
           </button>
         </>
+      ) : (
+        <p>Loading...</p>
       )}
     </main>
   );
