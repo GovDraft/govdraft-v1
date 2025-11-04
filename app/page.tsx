@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import createBrowserClient from '../../lib/supabaseClient'
+import createBrowserClient from '../lib/supabaseClient';
 
 export default function LoginPage() {
   const supabase = createBrowserClient()
