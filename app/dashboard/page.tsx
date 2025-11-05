@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createBrowserClient } from '../../lib/supabaseClient';
+import createBrowserClient from '../../lib/supabaseClient';
 
 export default function Dashboard() {
   const supabase = createBrowserClient();
