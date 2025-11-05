@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import createBrowserClient from '../../lib/supabaseClient';
 
 export default function LoginPage() {
-  const supabase = createBrowserClient();
   const router = useRouter();
+  const supabase = createBrowserClient();
+
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
-  // If already logged in, go to dashboard
+  // If already logged in, skip login page
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) router.replace('/dashboard');
@@ -24,9 +25,10 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: false, // only log in existing users
-        // IMPORTANT: this must match your route path below
-        emailRedirectTo: 'https://govdraft-v1.vercel.app/auth/callback',
+        // This is the ONLY URL Supabase should return to after the email click:
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        // You can allow creating users automatically (true) or require existing (false)
+        shouldCreateUser: true,
       },
     });
 
