@@ -1,7 +1,7 @@
 // app/auth/callback/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -12,28 +12,33 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL('/login', url.origin));
   }
 
-  // Get cookie storage ready
-  const cookieStore = cookies();
+  // Prepare the response we will send back (we'll attach auth cookies to it)
+  const res = NextResponse.redirect(new URL('/dashboard', url.origin));
+
+  // In Next 15 route handlers, cookies() is async and read-only
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
+        // read cookies from the incoming request
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
+        // write cookies onto the outgoing response
+        set(name: string, value: string, options: CookieOptions) {
+          res.cookies.set({ name, value, ...options });
         },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options });
+        remove(name: string, options: CookieOptions) {
+          res.cookies.set({ name, value: '', ...options });
         },
       },
     }
   );
 
-  // Exchange code for session
+  // Turn the ?code=... into a real session cookie
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -42,6 +47,6 @@ export async function GET(req: Request) {
     );
   }
 
-  // ✅ If successful, send them to their dashboard
-  return NextResponse.redirect(new URL('/dashboard', url.origin));
+  // All good → go to the dashboard
+  return res;
 }
