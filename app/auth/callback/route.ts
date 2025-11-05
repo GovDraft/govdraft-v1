@@ -11,20 +11,19 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login', url.origin));
   }
 
-  // Prepare a redirect to /dashboard
+  // Prepare a redirect response to /dashboard
   const res = NextResponse.redirect(new URL('/dashboard', url.origin));
 
-  // Create Supabase server client that can write cookies to the response
+  // Create a Supabase server client that writes auth cookies to this response
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          // In Next.js 15, cookies() returns a Promise, so handle it properly
           try {
             const store = cookies();
-            // @ts-ignore
+            // @ts-ignore – Next.js 15 returns a wrapped object
             return store.get(name)?.value;
           } catch {
             return undefined;
@@ -40,12 +39,12 @@ export async function GET(request: Request) {
     }
   );
 
-  // Exchange the code for a session (sets auth cookies)
+  // Exchange the code for a session (this sets the auth cookies on res)
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     console.error('Supabase login error:', error.message);
-    return NextResponse.redirect(new URL(`/login?error=${error.message}`, url.origin));
+    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin));
   }
 
   return res;
