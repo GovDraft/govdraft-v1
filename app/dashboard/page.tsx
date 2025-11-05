@@ -14,6 +14,7 @@ export default function Dashboard() {
       if (data?.user) {
         setUser(data.user);
       } else {
+        // not logged in → go to login
         window.location.href = '/login';
       }
     }
