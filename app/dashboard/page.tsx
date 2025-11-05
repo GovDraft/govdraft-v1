@@ -1,3 +1,4 @@
+// app/dashboard/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,13 +9,11 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // 🔍 Check who’s logged in
     async function loadUser() {
-      const { data, error } = await supabase.auth.getUser();
+      const { data } = await supabase.auth.getUser();
       if (data?.user) {
         setUser(data.user);
       } else {
-        // if no one is logged in, send back to login
         window.location.href = '/login';
       }
     }
