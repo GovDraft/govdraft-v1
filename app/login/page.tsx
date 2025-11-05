@@ -25,9 +25,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        // This is the ONLY URL Supabase should return to after the email click:
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        // You can allow creating users automatically (true) or require existing (false)
         shouldCreateUser: true,
       },
     });
