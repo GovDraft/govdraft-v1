@@ -7,15 +7,14 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
 
-  // No code? Go back to login
   if (!code) {
     return NextResponse.redirect(new URL('/login', url.origin));
   }
 
-  // Prepare the response we will send back (we'll attach auth cookies to it)
+  // Prepare an outgoing response we can attach cookies to
   const res = NextResponse.redirect(new URL('/dashboard', url.origin));
 
-  // In Next 15 route handlers, cookies() is async and read-only
+  // Next.js 15: cookies() is async and returns a read-only store
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -23,11 +22,11 @@ export async function GET(req: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        // read cookies from the incoming request
+        // read from incoming request
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        // write cookies onto the outgoing response
+        // write onto outgoing response
         set(name: string, value: string, options: CookieOptions) {
           res.cookies.set({ name, value, ...options });
         },
@@ -38,7 +37,6 @@ export async function GET(req: Request) {
     }
   );
 
-  // Turn the ?code=... into a real session cookie
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -47,6 +45,5 @@ export async function GET(req: Request) {
     );
   }
 
-  // All good → go to the dashboard
   return res;
 }
