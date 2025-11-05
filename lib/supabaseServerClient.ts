@@ -1,26 +1,28 @@
-'use server';
-
+// lib/supabaseServerClient.ts
 import { cookies } from 'next/headers';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-export async function createServerSupabaseClient() {
-  // In Next.js 15, cookies() can be async in server contexts
+export async function createServerSupabase() {
   const cookieStore = await cookies();
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: (name: string) => cookieStore.get(name)?.value,
-        set: (name: string, value: string, options?: CookieOptions) => {
-          // cookieStore.set accepts name/value/options in Next 15
-          cookieStore.set(name, value, options as any);
+  // RETURN a factory that gives you the client *and* a setter to attach cookies to a response
+  return (response?: { setCookie: (name: string, value: string, options: CookieOptions) => void }) =>
+    createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            // If a response helper is passed in, write cookies to it (for redirects)
+            response?.setCookie?.(name, value, options);
+          },
+          remove(name: string, options: CookieOptions) {
+            response?.setCookie?.(name, '', options);
+          },
         },
-        remove: (name: string, options?: CookieOptions) => {
-          cookieStore.set(name, '', { ...(options as any), maxAge: 0 });
-        },
-      },
-    }
-  );
+      }
+    );
 }
