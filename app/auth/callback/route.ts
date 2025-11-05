@@ -3,30 +3,30 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
+export async function GET(request: Request) {
+  const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
   if (!code) {
-    return NextResponse.redirect(new URL('/login', url.origin));
+    // No code? Go back to login.
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Prepare an outgoing response we can attach cookies to
-  const res = NextResponse.redirect(new URL('/dashboard', url.origin));
+  // We prepare the redirect response first, so we can write cookies to it.
+  const res = NextResponse.redirect(new URL('/dashboard', request.url));
 
-  // Next.js 15: cookies() is async and returns a read-only store
+  // Read any existing cookies (Next.js 15 async cookies API)
   const cookieStore = await cookies();
 
+  // Create a server client that writes cookies **onto the redirect response**
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        // read from incoming request
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        // write onto outgoing response
         set(name: string, value: string, options: CookieOptions) {
           res.cookies.set({ name, value, ...options });
         },
@@ -37,13 +37,9 @@ export async function GET(req: Request) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  // Turn the code into a real session (sets auth cookies on `res`)
+  await supabase.auth.exchangeCodeForSession(code);
 
-  if (error) {
-    return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin)
-    );
-  }
-
+  // Send the user to /dashboard **with** the auth cookies set.
   return res;
 }
