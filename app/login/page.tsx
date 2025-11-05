@@ -1,8 +1,9 @@
+// app/login/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import createBrowserClient from '../lib/supabaseClient'; // <-- correct path from /app/login
 import { useRouter } from 'next/navigation';
+import createBrowserClient from '../../lib/supabaseClient';
 
 export default function LoginPage() {
   const supabase = createBrowserClient();
@@ -10,7 +11,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
-  // If already logged in, skip login
+  // If already logged in, send to dashboard
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) router.replace('/dashboard');
@@ -23,8 +24,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: false,
-        // IMPORTANT: send the magic link to the callback route
+        shouldCreateUser: false, // only sign in existing users
+        // 👇 VERY IMPORTANT: come back to our server callback route
         emailRedirectTo: 'https://govdraft-v1.vercel.app/auth/callback',
       },
     });
