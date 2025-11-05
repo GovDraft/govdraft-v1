@@ -1,28 +1,42 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+// app/auth/callback/route.ts
 
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+
+// This runs whenever someone visits /auth/callback?code=XYZ
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const code = url.searchParams.get('code');
+  const code = url.searchParams.get('code'); // grab the ?code from the link
 
-  if (!code) {
-    // no code, go back to login
-    return NextResponse.redirect(new URL('/login', url.origin));
-  }
+  // Get access to Next.js cookies (so we can store the login session)
+  const cookieStore = cookies();
 
-  // Connect to Supabase
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  // Create a Supabase "server" client — this version can handle cookies
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,        // from Vercel Env Vars
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,   // from Vercel Env Vars
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options });
+        },
+      },
+    }
   );
 
-  // Try to exchange that code for a login session
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
-    return NextResponse.redirect(new URL('/login', url.origin));
+  // If we got a code, ask Supabase to turn it into a real session
+  if (code) {
+    await supabase.auth.exchangeCodeForSession(code);
+    return NextResponse.redirect(`${url.origin}/dashboard`);
   }
 
-  // 🎉 If login works, send them to dashboard
-  return NextResponse.redirect(new URL('/dashboard', url.origin));
+  // No code? Go back to login
+  return NextResponse.redirect(`${url.origin}/login`);
 }
