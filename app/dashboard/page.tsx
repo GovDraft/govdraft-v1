@@ -10,51 +10,49 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadUser() {
+    (async () => {
       const { data } = await supabase.auth.getUser();
-      setUser(data?.user ?? null);
+      if (data?.user) {
+        setUser(data.user);
+      } else {
+        window.location.href = '/login';
+      }
       setLoading(false);
-    }
-    loadUser();
+    })();
   }, [supabase]);
-
-  if (loading) {
-    return (
-      <main style={{ textAlign: 'center', marginTop: 100 }}>
-        <p>Loading…</p>
-      </main>
-    );
-  }
-
-  if (!user) {
-    if (typeof window !== 'undefined') window.location.href = '/login';
-    return null;
-  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = '/login';
   };
 
+  if (loading) return <main style={{ textAlign: 'center', marginTop: 100 }}>Loading...</main>;
+
   return (
     <main style={{ textAlign: 'center', marginTop: 100 }}>
       <h1>Dashboard</h1>
-      <p>🎉 You’re logged in as:</p>
-      <p style={{ fontWeight: 'bold', marginTop: 8 }}>{user.email}</p>
-      <button
-        onClick={handleLogout}
-        style={{
-          marginTop: 20,
-          padding: '8px 16px',
-          borderRadius: 6,
-          border: 'none',
-          backgroundColor: '#333',
-          color: 'white',
-          cursor: 'pointer',
-        }}
-      >
-        Log out
-      </button>
+      {user ? (
+        <>
+          <p>🎉 You’re logged in as:</p>
+          <p style={{ fontWeight: 'bold', marginTop: 8 }}>{user.email}</p>
+          <button
+            onClick={handleLogout}
+            style={{
+              marginTop: 20,
+              padding: '8px 16px',
+              borderRadius: 6,
+              border: 'none',
+              backgroundColor: '#333',
+              color: 'white',
+              cursor: 'pointer',
+            }}
+          >
+            Log out
+          </button>
+        </>
+      ) : (
+        <p>Not logged in</p>
+      )}
     </main>
   );
 }
