@@ -7,11 +7,12 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
 
+  // No code? Go back to login
   if (!code) {
-    // no code? go back to login
     return NextResponse.redirect(new URL('/login', url.origin));
   }
 
+  // Get cookie storage ready
   const cookieStore = cookies();
 
   const supabase = createServerClient(
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
     }
   );
 
-  // Exchange the code for a real session
+  // Exchange code for session
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
@@ -41,6 +42,6 @@ export async function GET(req: Request) {
     );
   }
 
-  // All good → go to dashboard
+  // ✅ If successful, send them to their dashboard
   return NextResponse.redirect(new URL('/dashboard', url.origin));
 }
