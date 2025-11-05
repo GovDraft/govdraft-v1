@@ -6,7 +6,6 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
-  // Prepare cookie helpers for Supabase SSR server client
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,12 +25,10 @@ export async function GET(request: Request) {
     }
   );
 
-  // If we have a code from the magic link, swap it for a session
   if (code) {
     await supabase.auth.exchangeCodeForSession(code);
     return NextResponse.redirect(`${url.origin}/dashboard`);
   }
 
-  // No code? Send back to login
   return NextResponse.redirect(`${url.origin}/login`);
 }
