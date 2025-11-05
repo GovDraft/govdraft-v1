@@ -11,10 +11,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
-  // If already logged in, send to dashboard
+  // If already logged in, go to dashboard
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) router.replace('/dashboard');
+      if (data?.user) router.replace('/dashboard');
     });
   }, [router, supabase]);
 
@@ -24,8 +24,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        shouldCreateUser: false, // only sign in existing users
-        // 👇 VERY IMPORTANT: come back to our server callback route
+        shouldCreateUser: false, // only log in existing users
+        // IMPORTANT: this must match your route path below
         emailRedirectTo: 'https://govdraft-v1.vercel.app/auth/callback',
       },
     });
