@@ -1,58 +1,46 @@
 // app/auth/callback/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-// Ensure Node.js runtime (avoids some Edge quirks)
+// Keep this on Node for stability
 export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
+  // If no code in URL, go back to login
   if (!code) {
     return NextResponse.redirect(new URL('/login', url.origin));
   }
 
-  // Prepare a redirect response to /dashboard
+  // We’ll end by sending people to /dashboard
   const res = NextResponse.redirect(new URL('/dashboard', url.origin));
 
-  // ✅ In your Next version cookies() is async — await it
-  const cookieStore = await cookies();
-
+  // Create a Supabase server client.
+  // We only IMPLEMENT `set` and `remove` here — no `get` needed.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          try {
-            return cookieStore.get(name)?.value;
-          } catch {
-            return undefined;
-          }
+        // We don't need to read any cookies for the code exchange
+        get(_name: string) {
+          return undefined;
         },
         set(name: string, value: string, options: CookieOptions) {
-          // Write to the outgoing response (so the browser gets the cookie)
+          // Write auth cookies onto the outgoing response
           res.cookies.set({ name, value, ...options });
-          // Best effort: also reflect in the server cookie bag if supported
-          try {
-            // Some Next versions allow setting here; ignore if not
-            // @ts-ignore
-            cookieStore.set?.({ name, value, ...options });
-          } catch {}
         },
         remove(name: string, options: CookieOptions) {
+          // Clear cookie on the outgoing response
           res.cookies.set({ name, value: '', ...options });
-          try {
-            // @ts-ignore
-            cookieStore.set?.({ name, value: '', ...options });
-          } catch {}
         },
       },
     }
   );
 
+  // Turn the `?code=` into a real session (Supabase sets cookies via `set` above)
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
