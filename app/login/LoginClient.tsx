@@ -1,17 +1,16 @@
-// app/login/LoginClient.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import createBrowserClient from '../../lib/supabaseClient';
-import { useRouter } from 'next/navigation';
 
-export default function LoginClient({ initialRedirect }: { initialRedirect: string }) {
-  const supabase = createBrowserClient();
+export default function LoginClient({ initialError }: { initialError?: string } = {}) {
   const router = useRouter();
+  const supabase = createBrowserClient();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const [redirect] = useState(initialRedirect || '/dashboard');
+  const [message, setMessage] = useState<string>(initialError || '');
 
   // If already logged in, skip login page
   useEffect(() => {
@@ -20,19 +19,25 @@ export default function LoginClient({ initialRedirect }: { initialRedirect: stri
     });
   }, [router, supabase]);
 
+  // Surface ?error=... from callback
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error) setMessage(error);
+  }, [searchParams]);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
 
-    // IMPORTANT: include ?redirect=... in the email link
-    const emailRedirectTo = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
-      redirect
-    )}`;
+    // If user came here from a protected page, middleware attached ?redirect=...
+    const redirect = searchParams.get('redirect') || '/dashboard';
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo,
         shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
+          redirect
+        )}`,
       },
     });
 
