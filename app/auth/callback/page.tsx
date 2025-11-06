@@ -3,12 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import createBrowserClient from '../../lib/supabaseClient';
+import createBrowserClient from '../../../lib/supabaseClient'; // <-- fixed path
 
 export default function AuthCallbackPage() {
   const router = useRouter();
   const supabase = createBrowserClient();
-  const [msg, setMsg] = useState('Finishing login…');
+  const [msg] = useState('Finishing login…');
 
   useEffect(() => {
     async function run() {
@@ -17,22 +17,22 @@ export default function AuthCallbackPage() {
         const code = url.searchParams.get('code');
 
         if (!code) {
-          // no code in the URL — nothing to exchange
           router.replace('/login?error=missing%20code');
           return;
         }
 
-        // Browser client handles both Magic Link and PKCE automatically.
+        // Browser client handles PKCE & magic links.
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
           router.replace(`/login?error=${encodeURIComponent(error.message)}`);
           return;
         }
 
-        // success — you’re logged in
         router.replace('/dashboard');
       } catch (e: any) {
-        router.replace(`/login?error=${encodeURIComponent(e.message || 'login failed')}`);
+        router.replace(
+          `/login?error=${encodeURIComponent(e?.message || 'login failed')}`
+        );
       }
     }
     run();
