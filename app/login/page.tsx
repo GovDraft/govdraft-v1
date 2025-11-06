@@ -1,13 +1,7 @@
-// app/login/page.tsx (server component)
-import LoginClient from './LoginClient'
+// app/login/page.tsx
+import LoginClient from './LoginClient';
 
-type PageProps = {
-  searchParams?: {
-    error?: string
-  }
-}
-
-export default function Page({ searchParams }: PageProps) {
-  const initialError = searchParams?.error
-  return <LoginClient initialError={initialError} />
+export default function Page(props: any) {
+  const initialError = props?.searchParams?.error as string | undefined;
+  return <LoginClient initialError={initialError} />;
 }
