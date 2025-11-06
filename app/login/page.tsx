@@ -1,15 +1,16 @@
-// app/login/page.tsx  (Server Component)
-import LoginClient from './LoginClient';
+// app/login/page.tsx (Server Component)
+import LoginClient from './LoginClient'
+
+type SearchParams = { [key: string]: string | string[] | undefined }
 
 export default function Page({
   searchParams,
 }: {
-  searchParams?: { error?: string };
+  searchParams?: SearchParams
 }) {
-  // Read any ?error= from the URL server-side (safe for prerender)
-  const initialError = searchParams?.error
-    ? decodeURIComponent(searchParams.error)
-    : '';
+  // Normalize ?error=... to a string (ignore arrays/undefined)
+  const error =
+    typeof searchParams?.error === 'string' ? searchParams.error : undefined
 
-  return <LoginClient initialError={initialError} />;
+  return <LoginClient error={error} />
 }
