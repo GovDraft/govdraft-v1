@@ -1,15 +1,13 @@
 // app/login/page.tsx
+import { Suspense } from 'react';
 import LoginClient from './LoginClient';
 
-export default function Page({
-  searchParams,
-}: {
-  searchParams?: { [key: string]: string | string[] | undefined };
-}) {
-  // if middleware sent ?redirect=..., grab it (fallback to /dashboard)
-  const redirect =
-    (typeof searchParams?.redirect === 'string' && searchParams?.redirect) ||
-    '/dashboard';
-
-  return <LoginClient initialRedirect={redirect} />;
+export default function Page() {
+  // No props, no searchParams: this keeps Next's PageProps typing happy.
+  // Suspense ensures useSearchParams() in the client is wrapped correctly.
+  return (
+    <Suspense>
+      <LoginClient />
+    </Suspense>
+  );
 }
