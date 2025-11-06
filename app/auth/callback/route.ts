@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code')
   const redirectTo = url.searchParams.get('redirect') || '/dashboard'
 
-  // If there’s no code, go back to login
+  // If there's no code, go back to login
   if (!code) {
     return NextResponse.redirect(new URL('/login', url.origin))
   }
@@ -24,6 +24,8 @@ export async function GET(request: Request) {
     {
       cookies: {
         get(name: string) {
+          // In route handlers we can read from the request headers if needed,
+          // but Supabase only needs set/remove here for exchange.
           return request.headers.get('cookie') ?? ''
         },
         set(name: string, value: string, options: CookieOptions) {
