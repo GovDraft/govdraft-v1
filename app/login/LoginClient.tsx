@@ -1,12 +1,11 @@
+// app/login/LoginClient.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import createBrowserClient from '../../lib/supabaseClient'
 
-type Props = {
-  initialError?: string
-}
+type Props = { initialError?: string }
 
 export default function LoginClient({ initialError }: Props) {
   const router = useRouter()
@@ -15,7 +14,6 @@ export default function LoginClient({ initialError }: Props) {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState(initialError ?? '')
 
-  // If already logged in, skip login page
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) router.replace('/dashboard')
@@ -24,7 +22,6 @@ export default function LoginClient({ initialError }: Props) {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -32,7 +29,6 @@ export default function LoginClient({ initialError }: Props) {
         shouldCreateUser: true,
       },
     })
-
     if (error) setMessage(error.message)
     else setMessage('✅ Check your email for the login link!')
   }
