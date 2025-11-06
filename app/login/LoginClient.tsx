@@ -1,58 +1,45 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import createClient from '../../lib/supabaseClient';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import createBrowserClient from '../../lib/supabaseClient'
 
-export default function LoginClient({ initialError = '' }: { initialError?: string }) {
-  const router = useRouter();
-  const supabase = createClient();
+type Props = {
+  initialError?: string
+}
 
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState(
-    initialError ? `⚠️ ${initialError}` : ''
-  );
+export default function LoginClient({ initialError }: Props) {
+  const router = useRouter()
+  const supabase = createBrowserClient()
 
-  // If already logged in, skip login
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState(initialError ?? '')
+
+  // If already logged in, skip login page
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) router.replace('/dashboard');
-    });
-  }, [router, supabase]);
+      if (data?.user) router.replace('/dashboard')
+    })
+  }, [router, supabase])
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-
-    // Preserve where the user was going (if middleware added ?redirect=...)
-    const current = new URL(window.location.href);
-    const redirect = current.searchParams.get('redirect') || '/dashboard';
+    e.preventDefault()
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        // Send user back through our /auth/callback with the same destination
-        emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
-          redirect
-        )}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         shouldCreateUser: true,
       },
-    });
+    })
 
-    if (error) setMessage(error.message);
-    else setMessage('✅ Check your email for the login link!');
+    if (error) setMessage(error.message)
+    else setMessage('✅ Check your email for the login link!')
   }
 
   return (
-    <main
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        marginTop: 100,
-      }}
-    >
+    <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 100 }}>
       <h1>Login</h1>
-
       <form onSubmit={handleLogin} style={{ display: 'flex', gap: 10 }}>
         <input
           type="email"
@@ -62,12 +49,9 @@ export default function LoginClient({ initialError = '' }: { initialError?: stri
           required
           style={{ padding: 10, width: 280 }}
         />
-        <button type="submit" style={{ padding: 10 }}>
-          Send Magic Link
-        </button>
+        <button type="submit" style={{ padding: 10 }}>Send Magic Link</button>
       </form>
-
       {message && <p style={{ marginTop: 16 }}>{message}</p>}
     </main>
-  );
+  )
 }
