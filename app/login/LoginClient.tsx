@@ -1,36 +1,43 @@
 // app/login/LoginClient.tsx
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import createBrowserClient from '../../lib/supabaseClient'
+import { useEffect, useState } from 'react';
+import createBrowserClient from '../../lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 
-type Props = { initialError?: string }
+export default function LoginClient({ initialRedirect }: { initialRedirect: string }) {
+  const supabase = createBrowserClient();
+  const router = useRouter();
 
-export default function LoginClient({ initialError }: Props) {
-  const router = useRouter()
-  const supabase = createBrowserClient()
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [redirect] = useState(initialRedirect || '/dashboard');
 
-  const [email, setEmail] = useState('')
-  const [message, setMessage] = useState(initialError ?? '')
-
+  // If already logged in, skip login page
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) router.replace('/dashboard')
-    })
-  }, [router, supabase])
+      if (data?.user) router.replace('/dashboard');
+    });
+  }, [router, supabase]);
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
+
+    // IMPORTANT: include ?redirect=... in the email link
+    const emailRedirectTo = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
+      redirect
+    )}`;
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo,
         shouldCreateUser: true,
       },
-    })
-    if (error) setMessage(error.message)
-    else setMessage('✅ Check your email for the login link!')
+    });
+
+    if (error) setMessage(error.message);
+    else setMessage('✅ Check your email for the login link!');
   }
 
   return (
@@ -49,5 +56,5 @@ export default function LoginClient({ initialError }: Props) {
       </form>
       {message && <p style={{ marginTop: 16 }}>{message}</p>}
     </main>
-  )
+  );
 }
