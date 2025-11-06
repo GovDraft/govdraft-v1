@@ -1,49 +1,50 @@
 // app/auth/callback/route.ts
-import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
-// keep on Node runtime (fixes cookie type error in Next 15)
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'
 
-export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const code = url.searchParams.get('code');
+export async function GET(request: Request) {
+  const url = new URL(request.url)
+  const code = url.searchParams.get('code')
+  const redirectTo = url.searchParams.get('redirect') || '/dashboard'
 
-  // where we want to go
-  const redirectTarget = code ? '/dashboard' : '/login';
-  const res = NextResponse.redirect(new URL(redirectTarget, url.origin));
+  // If there’s no code, go back to login
+  if (!code) {
+    return NextResponse.redirect(new URL('/login', url.origin))
+  }
 
-  if (!code) return res;
+  // Prepare response for Supabase cookie handling
+  const res = NextResponse.redirect(new URL(redirectTo, url.origin))
 
-  // create Supabase server client (only sets cookies)
+  // Create Supabase server client that can set cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get() {
-          return undefined as any; // no reads
+        get(name: string) {
+          return request.headers.get('cookie') ?? ''
         },
-        set(name, value, options) {
-          res.cookies.set({ name, value, ...options });
+        set(name: string, value: string, options: CookieOptions) {
+          res.cookies.set({ name, value, ...options })
         },
-        remove(name, options) {
-          res.cookies.set({ name, value: '', ...options });
+        remove(name: string, options: CookieOptions) {
+          res.cookies.set({ name, value: '', ...options })
         },
       },
     }
-  );
+  )
 
-  // exchange ?code= for a real session cookie
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  // Exchange the auth code for a session
+  const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    res.headers.set(
-      'Location',
-      `/login?error=${encodeURIComponent(error.message)}`
-    );
-    res.status = 302;
+    console.error('Supabase login error:', error.message)
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin)
+    )
   }
 
-  return res;
+  return res
 }
