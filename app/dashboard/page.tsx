@@ -1,58 +1,65 @@
-// app/dashboard/page.tsx
-'use client';
+// govdraft-v1/app/dashboard/page.tsx
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
+import ProfileCard from './ProfileCard'
+import ProjectsPanel from './ProjectsPanel'
 
-import { useEffect, useState } from 'react';
-import createBrowserClient from '../../lib/supabaseClient';
+export const runtime = 'nodejs'
 
-export default function Dashboard() {
-  const supabase = createBrowserClient();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export default async function DashboardPage() {
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => cookieStore.get(name)?.value,
+      },
+    }
+  )
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        setUser(data.user);
-      } else {
-        window.location.href = '/login';
-      }
-      setLoading(false);
-    })();
-  }, [supabase]);
+  const { data: auth, error: authErr } = await supabase.auth.getUser()
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/login';
-  };
+  if (authErr || !auth?.user) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-semibold">Not signed in</h1>
+        <p className="text-gray-600">Please log in to view your dashboard.</p>
+      </div>
+    )
+  }
 
-  if (loading) return <main style={{ textAlign: 'center', marginTop: 100 }}>Loading...</main>;
+  const userId = auth.user.id
+
+  let { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (!profile) {
+    const { data: up } = await supabase
+      .from('profiles')
+      .upsert({ id: userId })
+      .select('*')
+      .single()
+    profile = up
+  }
 
   return (
-    <main style={{ textAlign: 'center', marginTop: 100 }}>
-      <h1>Dashboard</h1>
-      {user ? (
-        <>
-          <p>🎉 You’re logged in as:</p>
-          <p style={{ fontWeight: 'bold', marginTop: 8 }}>{user.email}</p>
-          <button
-            onClick={handleLogout}
-            style={{
-              marginTop: 20,
-              padding: '8px 16px',
-              borderRadius: 6,
-              border: 'none',
-              backgroundColor: '#333',
-              color: 'white',
-              cursor: 'pointer',
-            }}
-          >
-            Log out
-          </button>
-        </>
-      ) : (
-        <p>Not logged in</p>
-      )}
-    </main>
-  );
+    <div className="p-6 md:p-8 space-y-8">
+      <header>
+        <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+        <p className="text-gray-600">
+          Make the most of your GovDraft account.
+        </p>
+      </header>
+
+      {profile && <ProfileCard profile={profile} />}
+
+      <ProjectsPanel />
+
+      {/* Later: drafts, analytics, exports etc */}
+    </div>
+  )
 }
