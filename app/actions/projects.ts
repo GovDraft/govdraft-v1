@@ -22,8 +22,8 @@ const ProjectIdSchema = z.object({
   id: z.string().uuid(),
 })
 
-function getSupabaseServer() {
-  const cookieStore = cookies()
+async function getSupabaseServer() {
+  const cookieStore = await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,7 +49,7 @@ export async function createProject(formData: FormData) {
     return { ok: false as const, error: message }
   }
 
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { data: auth } = await supabase.auth.getUser()
   const user = auth?.user
 
@@ -86,7 +86,7 @@ export async function renameProject(formData: FormData) {
     return { ok: false as const, error: message }
   }
 
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { data: auth } = await supabase.auth.getUser()
   const user = auth?.user
 
@@ -116,7 +116,7 @@ export async function archiveProject(formData: FormData) {
     return { ok: false as const, error: 'Invalid project id' }
   }
 
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { data: auth } = await supabase.auth.getUser()
   const user = auth?.user
 
@@ -150,7 +150,7 @@ export async function deleteProject(formData: FormData) {
     return { ok: false as const, error: 'Invalid project id' }
   }
 
-  const supabase = getSupabaseServer()
+  const supabase = await getSupabaseServer()
   const { data: auth } = await supabase.auth.getUser()
   const user = auth?.user
 
