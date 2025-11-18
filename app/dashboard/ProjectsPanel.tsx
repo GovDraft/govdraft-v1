@@ -14,7 +14,8 @@ export type Project = {
 }
 
 export default async function ProjectsPanel() {
-  const cookieStore = cookies()
+  // FIX: cookies() now returns a Promise → must await
+  const cookieStore = await cookies()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,7 +51,5 @@ export default async function ProjectsPanel() {
     )
   }
 
-  return (
-    <ProjectsPanelClient projects={projects ?? []} />
-  )
+  return <ProjectsPanelClient projects={projects ?? []} />
 }
