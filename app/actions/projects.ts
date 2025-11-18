@@ -45,7 +45,7 @@ export async function createProject(formData: FormData) {
   })
 
   if (!parsed.success) {
-    const message = parsed.error.errors.map(e => e.message).join(', ')
+    const message = parsed.error.issues.map(e => e.message).join(', ')
     return { ok: false as const, error: message }
   }
 
@@ -82,7 +82,7 @@ export async function renameProject(formData: FormData) {
   })
 
   if (!parsed.success) {
-    const message = parsed.error.errors.map(e => e.message).join(', ')
+    const message = parsed.error.issues.map(e => e.message).join(', ')
     return { ok: false as const, error: message }
   }
 
